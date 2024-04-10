@@ -44,6 +44,15 @@ functions:
           authorizer:
             name: keycloakAuthorizer
     name: lipsanen-${opt:stage}-file-upload-lambda
+  listMedia:
+    handler: src/list-media/handler.main
+    events:
+      - httpApi:
+          path: /listMedia
+          method: get
+          authorizer:
+            name: keycloakAuthorizer
+    name: lipsanen-${opt:stage}-list-media-lambda
 
 package:
   individually: true
