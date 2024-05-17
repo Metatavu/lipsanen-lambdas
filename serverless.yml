@@ -52,6 +52,10 @@ functions:
           method: get
           authorizer:
             name: keycloakAuthorizer
+          request:
+            parameters:
+              querystrings:
+                path: false
     name: lipsanen-${opt:stage}-list-media-lambda
 
 package:

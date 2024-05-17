@@ -4,7 +4,7 @@ import { S3Client, ListObjectsV2Command } from "@aws-sdk/client-s3";
 /**
  * Lambda function that lists the contents of the specified Amazon S3 bucket
  */
-export const main: APIGatewayProxyHandler = async () => {
+export const main: APIGatewayProxyHandler = async (event) => {
   try {
     const { BUCKET_NAME, BUCKET_REGION } = process.env;
 
@@ -16,8 +16,11 @@ export const main: APIGatewayProxyHandler = async () => {
     }
 
     const s3Client = new S3Client({ region: BUCKET_REGION });
+    const path = event.queryStringParameters?.path || "";
+    
     const listObjectsCommand = new ListObjectsV2Command({
       Bucket: BUCKET_NAME,
+      Prefix: path,
     });
 
     const { Contents } = await s3Client.send(listObjectsCommand);
