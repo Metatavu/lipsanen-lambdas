@@ -1,0 +1,83 @@
+service: lipsanen-${opt:stage}-lambdas
+frameworkVersion: '3'
+plugins:
+  - serverless-esbuild
+  - serverless-dotenv-plugin
+  - serverless-deployment-bucket
+
+useDotenv: true
+provider:
+  stage: ${opt:stage, 'stage'}
+  region: ${self:custom.region.${opt:stage, 'sta'}}
+  name: aws
+  runtime: nodejs18.x
+  environment:
+    BUCKET_NAME: ${env:BUCKET_NAME}
+    BUCKET_REGION: ${env:BUCKET_REGION}
+  httpApi:
+    cors: true
+    authorizers:
+      keycloakAuthorizer:
+        identitySource: $request.header.Authorization
+        issuerUrl: ${self:custom.keycloakUrl.${self:provider.stage}}
+        audience:
+          - account
+  iam:
+    role:
+      name: lipsanen-lambdas-${opt:stage}-role
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "s3:PutObject"
+          Resource: "arn:aws:s3:::${self:custom.s3BucketName.${self:provider.stage}}/*"
+
+  deploymentBucket:
+    name: "${self:service}-${opt:stage}-deploy"
+
+functions:
+  fileUpload:
+    handler: src/file-upload/handler.main
+    events:
+      - httpApi:
+          path: /uploadFile
+          method: post
+          authorizer:
+            name: keycloakAuthorizer
+    name: lipsanen-${opt:stage}-file-upload-lambda
+  listMedia:
+    handler: src/list-media/handler.main
+    events:
+      - httpApi:
+          path: /listMedia
+          method: get
+          authorizer:
+            name: keycloakAuthorizer
+          request:
+            parameters:
+              querystrings:
+                path: false
+    name: lipsanen-${opt:stage}-list-media-lambda
+
+package:
+  individually: true
+
+custom:
+  s3BucketName:
+    staging: lipsanen-staging
+    production: lipsanen
+  keycloakUrl:
+    staging: https://staging-lipsanen-auth.metatavu.io/realms/lipsanen
+    production: https://lipsanen-auth.metatavu.io/realms/lipsanen
+  region:
+    staging: us-east-2
+    production: eu-central-1
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    exclude:
+      - aws-sdk
+    target: node18
+    define: {}
+    platform: node
+    concurrency: 10
